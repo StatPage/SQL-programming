@@ -1,0 +1,391 @@
+SHOW DATABASES
+
+USE world
+
+SHOW TABLE STATUS
+
+DESCRIBE city;  # DESC로도 표현할 수 있다.
+
+DESC country;  # ;는 쿼리가 끝난다는 선언문
+
+DESC countrylanguage
+
+
+# SELECT FROM 가장 많이 쓰는 용어. 데이터 베이스 내 테이블에서 원하는 정보 추출
+SELECT * FROM city;   # *는 모든 걸 보여준다는 의미로 사용한다.
+
+SELECT Name, CountryCode FROM city;
+
+
+# 특정 조건으로 데이터를 추출하고 싶을 때 사용. 계산 비용을 줄여준다.
+SELECT * FROM city WHERE Population < 8000000;
+
+
+# 관계 연산자를 사용하면 유용하다. 
+# OR, AND, 조건 연산자(<, >, =, != 등등)
+select * from city where Population < 8000000 and Population > 7000000;
+
+# 문제: 한국에 있는 도시들 보기, 미국에 있는 도시들 보기, 한국에 있는 도시들 중에 인구 수가 100만 이상인 도시 보기
+DESC city;
+SELECT * FROM city WHERE CountryCode = 'Kor';
+SELECT * FROM city WHERE CountryCode = 'USA';
+SELECT * FROM city WHERE CountryCode = 'Kor' and Population >= 1000000;
+
+
+
+# BETWEEN 데이터가 숫자로 구성돼서 연속적인 값으로 AND랑 사용
+SELECT *
+FROM city
+WHERE Population BETWEEN 1000000 AND 3000000;
+
+# IN 이산적인 값의 조건에서 사용
+SELECT *
+FROM city
+WHERE Name In('Seoul', 'New York', 'Tokyo');
+
+
+# 연습문제: 한국, 일본, 미국의 도시를 보자
+SELECT *
+FROM city
+WHERE countryCode in ('Kor', 'Jap', 'USA')
+
+
+#LIKE: 문자열의 내용을 검색하기 위해 사용. 문자 뒤에 '%'를 붙인다. 한 글자만 추가해서 매칭하기 위해서는 '_'를 사용한다.
+SELECT *
+FROM city
+WHERE CountryCode LIKE 'KO_';
+
+SELECT *
+FROM city
+WHERE CountryCode LIKE 'U__';  # _를 한 개만 쓰면 아무것도 안나오고 %를 붙이면 USA랑 UGA가 뜬다.
+
+## %는 그냥 문자만 맞으면 매칭시켜주지만 _는 딱 한글자만 추가된 걸로 매칭시켜준다. 두 글자를 매칭시켜 주고 싶으면 _를 두 번 쓴다!!
+
+
+# 서브 쿼리: 쿼리문 안에 또 쿼리문이 들어 있는 것.
+select *
+from city
+where CountryCode = ( select CountryCode  # 등호는 서브쿼리의 결과가 하나만 나와야 한다. 선언문이니까
+					  from city
+                      where Name = "Seoul");  # 이 특정 쿼리의 결과는 kor이고 CountryCode의 결과가 kor인 자료들이 뜬 것이다.
+
+
+#서브쿼리의 여러 개의 결과 중 한 가지만 만족해도 출력 가능
+SELECT * 
+FROM city
+where Population > any( select Population  # any 대신에 some을 써도 된다.
+						from city
+						where District = 'New York'); # 뉴욕 지역의 도시들 중 하나라도 인구수가 많으면 출력
+                        
+
+# ALL: 서브쿼리의 여러 개의 결과를 모두 만족시키는 자료를 출력. 만족하지 못하면? 출력 못하는 거지 뭐.
+SELECT * 
+FROM city
+where Population > all( 	select Population  # any 대신에 some을 써도 된다.
+							from city
+							where District = 'New York')   # 뉴욕 지역의 도시들 전체보다 인구수가 많은 도시들을 보여달라는 이야기 
+                            
+                            
+                            
+select *
+from city
+order by Population desc; #내림차순 
+
+select *
+from city
+order by Population asc; # asc는 생략 가능
+
+# 혼용
+
+select *
+from city
+order by CountryCode asc, Population desc;
+
+# 인구수로 내림차순하여 한국에 있는 도시 보기, 국가 면적 크기로 내림차순하여 나라 보기
+select *
+from city 
+where CountryCode = 'KOR'
+order by Population desc;
+
+select *
+from country
+order by SurfaceArea desc;
+
+
+
+# distinct
+select distinct CountryCode
+from city;
+
+# limit
+select *
+from city
+order by population desc
+limit 10;
+
+
+# group by
+select CountryCode, max(Population) as 'Average' # avg, min, max 등등
+from city;
+
+
+# 도시는 몇개인가? 도시들의 평균 인구수는?
+select count(*);
+
+select avg(Population)
+from city;
+
+# having
+select CountryCode, max(Population)  # 집계 함수는 하나의 묶음 내에서 대표값을 내놓은다고 생각하면 좋을 거 같다.
+from city
+group by CountryCode
+having max(Population) > 8000000;
+
+
+# rollup: 중간 계산 과정을 보여주는 것.
+select CountryCode, Name, sum(Population)
+from city
+group by CountryCode, Name with rollup;
+
+
+# join
+select *
+from city
+join country on city.CountryCode = country.Code;   # 같은 거를 조건으로 조인해줘
+
+# Lab6: city, country, countrylanguage 테이블 3개를 join하기
+desc country;
+desc city;
+desc countrylanguage;
+
+select *
+from city
+join country on city.CountryCode = country.code   # 기준은 city니까 city에 관한 조건식 두 개 써주면 되지.
+join countrylanguage on city.CountryCode = countrylanguage.CountryCode
+
+
+# length:
+select length('asdfjlks');
+
+# concat, 문자열 중 하나가 NULL이면 NULL을 반환
+select concat('My ', 'apple ', 'is ', 'mine.');
+
+# locate
+select locate('abc', 'abcsgascabcasgdsabc'); # sql은 인덱스가 1부터 시작
+
+# left, right
+select
+left('sasadsf', 2),
+right('sgsf', 1);
+
+# lower, upper: 소문자, 대문자 변환.
+select
+lower('SFKSLG'),
+upper('sgsf');
+
+# replace: 
+select replace('mssql', 'ms', 'my');
+
+# trim: 공백을 없애거나 특정 문자를 없앨 수 있다.
+select trim('                 mysql            '),
+trim(leading '#' from '###mysql###'),
+trim(trailing '#' from '###mysql###');
+
+
+# format
+select format(12315241231352341241.12948193, 3); # 마지막 숫자는 소수점 자리수 결정
+
+# floor, ceil, round: 올림 내림 기능
+select floor(10.95), ceil(10.90), round(10.95);
+
+# sqrt, power, exp, log
+select sqrt(4), power(2,3), exp(4), log(10);
+
+# sin, cos, tan
+select sin(Pi()/2), cos(Pi()), tan(Pi()/2);
+
+# abs, rand(랜덤함수)
+select abs(3.57), round(rand()*100, 0);
+
+# now, curdate(날짜), curtime(시간)
+select now(), curdate(), curtime();
+
+# date, month, day, hour, minute, second
+select
+date(now()),
+month(now()),
+day(now()),
+hour(now()),
+minute(now()),
+second(now());
+
+# monthname, dayname
+select
+monthname(now()),
+dayname(now());
+
+# dayofweek, dayofmonth, dayofyear
+select
+now(),
+dayofweek(now()),
+dayofmonth(now()),
+dayofyear(now());
+
+
+
+## SQL 고급
+
+# create table as select
+create table city2 as select * from city;   # 원본 그대로 복사
+
+select * from city2;
+
+
+# create database
+create database min;
+use min;
+
+# schemas에서 생성하 데이터베이스에 마우스 우측키로 table을 만들 수 있다.
+select * from new1;
+
+desc new1;
+
+# create table
+create table new2(
+	id INT NOT NULL PRIMARY KEY,
+	col1 INT NULL,
+    col2 FLOAT NULL,
+    col3 varchar(45) NULL  # varchar(n) 가변적 길이를 허용하는 문자열인데 최대 길이는 n이고 NULL을 허용한다.
+);
+
+
+# alter table: add문과 함께 사용.
+alter table new2
+add col4 int null;
+
+select * from new2;
+
+desc new2;
+
+# 수정
+alter table new2
+modify col4 varchar(20) NULL;
+
+desc new2;
+
+
+# create index
+create index colidx
+on new2(col1);
+
+show index from new2;
+
+
+# create unique index: 중복 값을 허용하지 않는 인덱스
+create unique index colidx2
+on new2(col1);
+
+show index from new2;   # 결과에서 Non_unique가 0이면 unique한 거다.
+
+
+# fulltext index: 매우 빠르게 모든 테이블의 모든 텍스트 갈럼 검색 
+alter table new2
+add fulltext colidx1(col3);
+
+show index from new2;
+
+
+
+# alter table을 이용한 index 삭제
+alter table new2
+drop index colidx;   # 인덱스 이름은 key_name으로 확인하면 된다.
+
+show index from new2;
+
+# drop index
+drop index colidx3 on new2;
+
+show index from new2;
+
+
+# view: 가상 테이블
+# 장점: 필요한 칼럼만 보일 수 있다/ 복잡한 쿼리를 단순하게 표현 가능/ 커리 재사용 가능
+# 단점: 한 번 정의됐으면 변경 불가/ 삽입, 삭제, 갱신 작업에 많은 제한 사항 필요/ 자신만의 인덱스를 가질 수 없다.
+
+desc new2;
+
+# create view
+create view new2view as
+select col1, col3
+from new2;
+
+select * from new2view;
+
+
+# alter문 사용
+alter view new2view as
+select col1, col2, col3
+from new2;
+
+select * from new2view;
+
+# lab7: city, country, countrylanguage 테이블을 join하고, 한국에 대한 정보만 뷰 생성하기
+use world;
+
+create view allview as
+select city.Name, country.SurfaceArea, city.Population, countrylanguage.Language
+from city
+join country on city.CountryCode = country.Code
+join countrylanguage on city.CountryCode = countrylanguage.CountryCode
+where city.CountryCode = 'KOR';
+
+select * from allview;   # 필요할 때마다 이 view를 확인할 수 있다.
+
+
+# insert 테이블에 insert하는 수와 column 수와 일치해야 한다.
+use min;
+insert into new2
+value(1, 321, 1.1, 1,'test'); 
+
+select * from new2;   # 테이블에 직접 입력해도 된다. 그리고 apply 누르면 알아서 sql명령으로 변환됨ㅋㅋ
+
+
+# insert into select: 테이블에 있는 내용을 다른 테이블에 삽입
+insert into new3 select * from new1;   # new2는 다른 테이블들과 열이 안 맞아서 new1에 원소를 집어넣고 복사 집어넣기 실행
+
+select * from new3;
+
+
+# update: 기존의 값을 변경
+update new3
+set col1=1, col2=1.0, col3='test'
+where id = 1;   # where를 지정 안 하면 모든 값이 변해버린다.
+
+select * from new3;
+
+
+# delete
+delete from new2
+where id = 1;  # 여기도 where 지정 안 하면 다 날라간다.
+
+select * from new2;   # 값이 휴지통에 갔다고 생각하면 된다. 복구가 가능해서 용량이 그대로 유지
+
+
+# truncate: 복구 불가, 용량 감소
+truncate table new1;
+
+select * from new1;
+
+
+# drop table: 테이블 자체를 없애는 것
+drop table new1;
+
+select * from new1;   # 테이블이 존재하지 않는다.
+
+
+# drop database: 데이터베이스도 없애보자
+drop database min;
+
+
+
+# 자신만의 연락처 테이블 만들기. 이름, 전화번호, 주소, 이메일, ...
